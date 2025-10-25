@@ -38,8 +38,11 @@ function love.load()
     end
 end
 
+local keys = {}
+local fps = 0
+
 function love.update(dt)
-    local keys = {
+    keys = {
         up = love.keyboard.isDown("up"),
         down = love.keyboard.isDown("down"),
         left = love.keyboard.isDown("left"),
@@ -48,33 +51,53 @@ function love.update(dt)
 
     fps = love.timer.getFPS()
 
-    player.moving = false
+    -- determine exclusive horizontal / vertical movement (cancel opposing keys)
+    local horiz = (keys.left ~= keys.right) and (keys.left or keys.right)
+    local vert  = (keys.up ~= keys.down) and (keys.up or keys.down)
 
-    if keys.up then
+    -- apply movement
+    if keys.up and not keys.down then
         player.y = player.y - player.speed * dt
-        moving = true
     end
 
-    if keys.down then
+    if keys.down and not keys.up then
         player.y = player.y + player.speed * dt
-        moving = true
     end
 
-    if keys.left then
+    if keys.left and not keys.right then
         player.x = player.x - player.speed * dt
-        moving = true
     end
 
-    if keys.right then
+    if keys.right and not keys.left then
         player.x = player.x + player.speed * dt
-        moving = true
     end
 
-    if (keys.up and keys.down) or (keys.left and keys.right) then
-        moving = false
+    -- update moving state
+    player.moving = horiz or vert
+
+    -- decide which face should be active when moving
+    local desiredFace = nil
+    if horiz then
+        if keys.right then desiredFace = "right"
+        elseif keys.left then desiredFace = "left" end
+    elseif vert then
+        if keys.up then desiredFace = "up"
+        elseif keys.down then desiredFace = "down" end
     end
 
-    player.animations[player.face]:update(dt)
+    if player.moving then
+        -- switch face if needed and restart its animation
+        if desiredFace and desiredFace ~= player.face then
+            player.face = desiredFace
+        end
+        -- ensure the current face animation is playing and update it
+        player.animations[player.face]:resume()
+        player.animations[player.face]:update(dt)
+    else
+        -- no effective movement: show standing frame and pause
+        player.animations[player.face]:gotoFrame(2)
+        player.animations[player.face]:pause()
+    end
 end
 
 love.keypressed = function(key)
@@ -82,25 +105,25 @@ love.keypressed = function(key)
         return
     end
 
+    -- only set facing immediately; actual play/pause handled in love.update
     if key == "up" then
-        player.face = "up"
+        player.face = "up" and not keys.down
     elseif key == "down" then
-        player.face = "down"
-    elseif key == "left" then
+        player.face = "down" and not keys.up
+    elseif key == "left" and not keys.right then
         player.face = "left"
-    elseif key == "right" then
+    elseif key == "right" and not keys.left then
         player.face = "right"
     end
 
     player.animations[player.face]:gotoFrame(1)
-    player.animations[player.face]:resume()
 end
 
 love.keyreleased = function(key)
-    if table.find({"up", "down", "left", "right"}, key) and player.moving == false then
-        player.animations[player.face]:gotoFrame(2)
-        player.animations[player.face]:pause()
+    if table.find({"up", "down", "left", "right"}, key) == nil then
+        return
     end
+    -- no direct animation changes here; love.update will detect remaining keys and act
 end
 
 function love.draw()
