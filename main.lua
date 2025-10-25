@@ -4,7 +4,6 @@ function love.load()
     love.window.setTitle("deadweight")
     love.window.setIcon(love.image.newImageData("/assets/images/dw_logo_sun.png"))
     local font = love.graphics.newFont("/assets/fonts/dotumche-pixel.ttf", 14)
-
     love.graphics.setFont(font)
 end
 
