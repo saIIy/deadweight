@@ -1,9 +1,19 @@
-function love.load()
-    anim8 = require("lib/anim8")
+function table.find(table, element)
+    for index, value in pairs(table) do
+        if value == element then
+            return index
+        end
+    end
+    return nil
+end
 
+anim8 = require("lib/anim8")
+word_shift = require("lib/word_shift")
+
+function love.load()
     love.graphics.setDefaultFilter("nearest", "nearest")
 
-    font = love.graphics.newFont("/assets/fonts/dotumche-pixel.ttf", 26)
+    font = love.graphics.newFont("/assets/fonts/flexi-ibm-vga-true.regular.ttf", 32)
     love.graphics.setFont(font)
 
     player = {
@@ -20,31 +30,58 @@ function love.load()
             up = anim8.newAnimation(anim8.newGrid(20, 38, 80, 152)('1-4',4), 0.2),
         },
         moving = false,
-        xspd = 0,
-        yspd = 0,
     }
+
+    for _,v in pairs(player.animations) do
+        v:gotoFrame(2)
+        v:pause()
+    end
 end
 
 function love.update(dt)
+    local keys = {
+        up = love.keyboard.isDown("up"),
+        down = love.keyboard.isDown("down"),
+        left = love.keyboard.isDown("left"),
+        right = love.keyboard.isDown("right"),
+    }
+
     fps = love.timer.getFPS()
+
+    player.moving = false
+
+    if keys.up then
+        player.y = player.y - player.speed * dt
+        moving = true
+    end
+
+    if keys.down then
+        player.y = player.y + player.speed * dt
+        moving = true
+    end
+
+    if keys.left then
+        player.x = player.x - player.speed * dt
+        moving = true
+    end
+
+    if keys.right then
+        player.x = player.x + player.speed * dt
+        moving = true
+    end
+
+    if (keys.up and keys.down) or (keys.left and keys.right) then
+        moving = false
+    end
+
     player.animations[player.face]:update(dt)
-    player.x = player.x + player.xspd * dt
-    player.y = player.y + player.yspd * dt
-
-    if love.keyboard.isDown("up") then player.yspd = -player.speed end
-    if love.keyboard.isDown("down") then player.yspd = player.speed end
-    if love.keyboard.isDown("left") then player.xspd = -player.speed end
-    if love.keyboard.isDown("right") then player.xspd = player.speed end
-
-    if not love.keyboard.isDown("up") and not love.keyboard.isDown("down") then
-        player.yspd = 0
-    end
-    if not love.keyboard.isDown("left") and not love.keyboard.isDown("right") then
-        player.xspd = 0
-    end
 end
 
 love.keypressed = function(key)
+    if table.find({"up", "down", "left", "right"}, key) == nil then
+        return
+    end
+
     if key == "up" then
         player.face = "up"
     elseif key == "down" then
@@ -54,12 +91,13 @@ love.keypressed = function(key)
     elseif key == "right" then
         player.face = "right"
     end
+
     player.animations[player.face]:gotoFrame(1)
     player.animations[player.face]:resume()
 end
 
 love.keyreleased = function(key)
-    if key == "up" or key == "down" or key == "left" or key == "right" then
+    if table.find({"up", "down", "left", "right"}, key) and player.moving == false then
         player.animations[player.face]:gotoFrame(2)
         player.animations[player.face]:pause()
     end
@@ -73,6 +111,9 @@ function love.draw()
     love.graphics.setColor(1, 0, 0)
     love.graphics.print(text, love.graphics:getWidth() - 10, 10, 0, 1, 1, font:getWidth(text))
 
+    love.graphics.print(word_shift.wordCycle({"test 1", "test 2", "mrrp meow"}, true), 10, 10)
+
     love.graphics.setColor(1,1,1)
+
     player.animations[player.face]:draw(player.sprite, player.x, player.y, 0, 2, 2)
 end
