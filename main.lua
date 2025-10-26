@@ -38,7 +38,13 @@ function love.load()
     end
 end
 
-local keys = {}
+local keys = {
+    up = false,
+    down = false,
+    left = false,
+    right = false,
+}
+
 local fps = 0
 
 function love.update(dt)
@@ -106,10 +112,10 @@ love.keypressed = function(key)
     end
 
     -- only set facing immediately; actual play/pause handled in love.update
-    if key == "up" then
-        player.face = "up" and not keys.down
-    elseif key == "down" then
-        player.face = "down" and not keys.up
+    if key == "up" and not keys.down then
+        player.face = "up"
+    elseif key == "down" and not keys.up then
+        player.face = "down"
     elseif key == "left" and not keys.right then
         player.face = "left"
     elseif key == "right" and not keys.left then
