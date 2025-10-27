@@ -1,14 +1,13 @@
 local room = {}
 
-room.map = "test_map"
+room.map = "test_map_2"
 
 function room:load()
     
 end
 
 function room:draw()
-    love.graphics.setColor(1,1,1)
-    love.graphics.print("This is Room 2", 100, 100)
+    
 end
 
 function room:update(dt)

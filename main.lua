@@ -1,68 +1,5 @@
 -- # main.lua
 
--- room management
-local currentRoom = nil
-local nextRoom = nil
-local transitionAlpha = 0
-local transitioning = false
-local transitionSpeed = 5
-local transitionTime = 0
-
-local walls = {}
-local doors = {}
-
-function loadRoom(name)
-    local room = require("rooms." .. name)
-
-    print(name)
-
-    if currentRoom and currentRoom.onExit then
-        currentRoom:onExit(name)
-    end
-
-    -- clear existing walls
-    for _,v in pairs(walls) do
-        v:destroy()
-    end
-
-    -- setup new walls
-    walls = {}
-    for _,v in pairs(maps[room.map].layers.Walls.objects) do
-        local wall = world:newBSGRectangleCollider(v.x, v.y, v.width, v.height, 0)
-        wall:setType("static")
-        table.insert(walls, wall)
-    end
-
-    -- setup new doors
-    doors = {}
-    for _,v in pairs(maps[room.map].layers.Doors.objects) do
-        local door = {}
-        door.target_room = v.properties.target_room
-        door.target_pos = { x = v.properties.target_x, y = v.properties.target_y }
-        door.size = { width = v.width, height = v.height }
-        door.position = { x = v.x, y = v.y }
-        table.insert(doors, door)
-    end
-
-    -- position player at spawn point
-    local spawnPoint = maps[room.map].layers["Spawn"].objects[1]
-    player.collider:setPosition(spawnPoint.x, spawnPoint.y)
-    print("Player spawned at: ", spawnPoint.x, spawnPoint.y)
-
-    room:load()
-    currentRoom = room
-end
-
-local transitionPhase = "out" -- or "in"
-
-function switchRoom(name)
-    if not transitioning then
-        transitioning = true
-        transitionPhase = "out"
-        nextRoom = name
-    end
-end
-
 -- random seed
 math.randomseed(os.time())
 
@@ -76,6 +13,27 @@ function table.find(table, element)
     return nil
 end
 
+-- luau's math.clamp
+function math.clamp(n, min, max)
+    if n > max then
+        return max
+    elseif n < min then
+        return min
+    else
+        return n
+    end
+end
+
+-- table debugger
+---@param t table
+function printTable(t)
+    for i, v in pairs(t) do
+        if type(v) ~= "table" then
+            print("["..i.."] = "..v)
+        end
+    end
+end
+
 -- load libraries
 anim8 = require("lib/anim8")
 word_shift = require("lib/word_shift")
@@ -84,12 +42,99 @@ sti = require("lib.sti")
 libcamera = require("lib.camera")
 wf = require("lib.windfield")
 
+-- room management
+local currentRoom = nil
+local nextRoom = nil
+local nextRoomSpawn = nil
+local transitionAlpha = 0
+local transitioning = false
+local transitionSpeed = 5
+local transitionTime = 0
+
+maps = {}
+
+local walls = {}
+local doors = {}
+
+function unloadRoom()
+    -- clear existing walls
+    for _,v in pairs(walls) do
+        v:destroy()
+    end
+
+    walls, doors = {}, {}
+
+    if currentRoom and currentRoom.onExit then
+        currentRoom:onExit()
+    end
+end
+
+function loadRoom(name)
+    local room = require("rooms." .. name)
+
+    if not maps[name] then
+        maps[room.map] = sti("assets/maps/"..room.map..".lua")
+    end
+
+    print(name)
+
+    -- unload current room
+    unloadRoom()
+
+    -- setup new walls
+    print(room.map)
+    for _,v in pairs(maps[room.map].layers.Walls.objects) do
+        local wall = world:newBSGRectangleCollider(v.x, v.y, v.width, v.height, 0)
+        wall:setType("static")
+        table.insert(walls, wall)
+    end
+
+    -- setup new doors
+    for _,v in pairs(maps[room.map].layers.Doors.objects) do
+        local door = {}
+        door.target_room = v.properties.target_room
+        door.target_pos = { x = v.properties.target_x, y = v.properties.target_y }
+        door.size = { width = v.width, height = v.height }
+        door.position = { x = v.x, y = v.y }
+        table.insert(doors, door)
+    end
+
+    -- position player at spawn point
+    local spawnPoint = maps[room.map].layers["Spawn"].objects[1]
+
+    if nextRoomSpawn then
+        spawnPoint = nextRoomSpawn
+    end
+
+    player.collider:setPosition(spawnPoint.x, spawnPoint.y)
+    print("Player spawned at: ", spawnPoint.x, spawnPoint.y)
+
+    room:load()
+    currentRoom = room
+end
+
+local transitionPhase = "out" -- or "in"
+
+---@param pos {x:number, y:number}|nil
+---@param face string|nil
+function switchRoom(name, pos, face)
+    if not transitioning then
+        transitioning = true
+        transitionPhase = "out"
+        nextRoom = name
+
+        if pos and pos.x and pos.y then
+            nextRoomSpawn = pos
+        end
+
+        if face then
+            player.face = face
+        end
+    end
+end
+
 -- NO BLURRY SHIT
 love.graphics.setDefaultFilter("nearest", "nearest")
-
-maps = {
-    test_map = sti("/assets/maps/test_map.lua"),
-}
 
 game = {
     menu = true,
@@ -104,6 +149,7 @@ player = {
     sprite = love.graphics.newImage("/assets/images/player/player_sprite_sheet.png"),
     grid = anim8.newGrid(20, 38, 80, 152),
     face = "down",
+    control = true,
     animspeed = 1,
     animations = {
         down = anim8.newAnimation(anim8.newGrid(20, 38, 80, 152)('1-4',1), 0.2),
@@ -124,6 +170,9 @@ sounds = {
         test = love.audio.newSource("assets/sounds/music/in_the_snow.ogg", "stream"),
     }
 }
+
+local escKeyHeld = false
+local quitTextAlpha = 0
 
 function love.load()
     world = wf.newWorld(0, 0, false)
@@ -163,10 +212,17 @@ local fps = 0
 function love.update(dt)
     fps = love.timer.getFPS()
 
+    if escKeyHeld then
+        quitTextAlpha = math.min(quitTextAlpha + 0.007, 1)
+    else
+        quitTextAlpha = math.max(quitTextAlpha - 0.003, 0) 
+    end
+
     for _,v in pairs(doors) do
         local collider = world:queryRectangleArea(v.position.x, v.position.y, v.size.width, v.size.height, {'Player'})
-        if table.find(collider, player.collider) then
-            switchRoom(v.target_room)
+        if table.find(collider, player.collider) and not transitioning then
+            printTable(v)
+            switchRoom(v.target_room, v.target_pos, v.target_face)
         end
     end
 
@@ -181,28 +237,34 @@ function love.update(dt)
     local vy = 0
 
     -- apply movement
-    if keys.up and not keys.down then
-        vy = -player.speed
-    end
+    if player.control then
+        if keys.up and not keys.down then
+            vy = -player.speed
+        end
 
-    if keys.down and not keys.up then
-        vy = player.speed
-    end
+        if keys.down and not keys.up then
+            vy = player.speed
+        end
 
-    if keys.left and not keys.right then
-        vx = -player.speed
-    end
+        if keys.left and not keys.right then
+            vx = -player.speed
+        end
 
-    if keys.right and not keys.left then
-        vx = player.speed
+        if keys.right and not keys.left then
+            vx = player.speed
+        end
     end
 
     player.collider:setLinearVelocity(vx, vy)
+
+    io.write("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n")
+    print(cam.x, cam.y)
 
     world:update(dt)
 
      if transitioning then
         if transitionPhase == "out" then
+            player.control = false
             transitionAlpha = transitionAlpha + dt * transitionSpeed
             if transitionAlpha >= 1 and transitionTime >= 1.75 then
                 loadRoom(nextRoom)
@@ -210,6 +272,9 @@ function love.update(dt)
                 transitionPhase = "in"
             end
         elseif transitionPhase == "in" then
+            player.control = true
+            vx, vy = 0, 0
+
             transitionAlpha = transitionAlpha - dt * transitionSpeed
             if transitionAlpha <= 0 then
                 transitionAlpha = 0
@@ -266,19 +331,22 @@ function love.update(dt)
         player.animations[player.face]:gotoFrame(2)
         player.animations[player.face]:pause()
     end
-
+    
     player.position.x = player.collider:getX()
     player.position.y = player.collider:getY() - 13
 
     cam:lookAt(player.position.x, player.position.y)
     cam:zoomTo(2)
 
-    if cam.x < 0 then
-        cam.x = 0
+    local w = love.graphics.getWidth()
+    local h = love.graphics.getHeight()
+
+    if cam.x < w/4 then
+        cam.x = w/4
     end
 
-    if cam.y < 0 then
-        cam.y = 0
+    if cam.y < h/4 then
+        cam.y = h/4
     end
 
     if not currentRoom then
@@ -288,9 +356,6 @@ function love.update(dt)
     local mapw = maps[currentRoom.map].width * maps[currentRoom.map].tilewidth
     local maph = maps[currentRoom.map].height * maps[currentRoom.map].tileheight
 
-    local w = love.graphics.getWidth()
-    local h = love.graphics.getHeight()
-
     if cam.x > mapw - w/4 then
         cam.x = mapw - w/4
     end
@@ -298,9 +363,20 @@ function love.update(dt)
     if cam.y > maph - h/4  then
         cam.y = maph - h/4
     end
+
+    cam.x = math.floor(cam.x)
+    cam.y = math.floor(cam.y)
+    player.position.x = math.floor(player.position.x)
+    player.position.y = math.floor(player.position.y)
+
+    print(cam.x, cam.y)
 end
 
 love.keypressed = function(key)
+    if key == "escape" then
+        escKeyHeld = true
+    end
+
     if table.find({"up", "down", "left", "right"}, key) == nil then
         return
     end
@@ -320,6 +396,10 @@ love.keypressed = function(key)
 end
 
 love.keyreleased = function(key)
+    if key == "escape" then
+        escKeyHeld = false
+    end
+
     if table.find({"up", "down", "left", "right"}, key) == nil then
         return
     end
@@ -355,5 +435,12 @@ function love.draw()
         love.graphics.setColor(0, 0, 0, transitionAlpha)
         love.graphics.rectangle("fill", 0, 0, love.graphics.getWidth(), love.graphics.getHeight())
         love.graphics.setColor(1, 1, 1, 1)
+    end
+
+    love.graphics.setColor(1, 1-quitTextAlpha, 1-quitTextAlpha, quitTextAlpha)
+    love.graphics.print("Quitting...", 10, 10)
+
+    if quitTextAlpha >= 1 then
+        love.event.quit()
     end
 end
