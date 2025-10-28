@@ -35,6 +35,10 @@ end
 function loadRoom(name)
     local room = require("rooms." .. name)
 
+    if #maps > 4 then
+        table.remove(maps, 1)
+    end
+
     if not maps[name] then
         maps[room.map] = sti("assets/maps/"..room.map..".lua")
     end
