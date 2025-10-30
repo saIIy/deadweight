@@ -1,52 +1,96 @@
--- luau's table.find
-function table.find(table, element)
-    for index, value in pairs(table) do
-        if value == element then
-            return index
+function love.load()
+    -- luau's table.find
+    ---@param table table
+    ---@param element any
+    ---@return number|nil
+    function table.find(table, element)
+        for index, value in pairs(table) do
+            if value == element then
+                return index
+            end
+        end
+        return nil
+    end
+
+    ---@param sound love.Source
+    function playSound(sound)
+        sound:stop()
+        sound:play()
+    end
+
+    -- luau's math.clamp
+    ---@param n number
+    ---@param min number
+    ---@param max number
+    ---@return number
+    function math.clamp(n, min, max)
+        if n > max then
+            return max
+        elseif n < min then
+            return min
+        else
+            return n
         end
     end
-    return nil
-end
 
--- luau's math.clamp
-function math.clamp(n, min, max)
-    if n > max then
-        return max
-    elseif n < min then
-        return min
-    else
-        return n
-    end
-end
-
--- table debugger
----@param t table
-function printTable(t)
-    for i, v in pairs(t) do
-        if type(v) ~= "table" then
-            print("["..i.."] = "..v)
+    -- table debugger
+    ---@param t table
+    function printTable(t)
+        for i, v in pairs(t) do
+            if type(v) ~= "table" then
+                print("["..i.."] = "..v)
+            end
         end
     end
-end
 
--- load libraries
-anim8 = require("lib/anim8")
-word_shift = require("lib/word_shift")
-button = require("assets.classes.button")
-sti = require("lib.sti")
-libcamera = require("lib.camera")
-wf = require("lib.windfield")
+    -- load libraries
+    anim8 = require("lib/anim8")
+    word_shift = require("lib/word_shift")
+    button = require("assets.classes.button")
+    sti = require("lib.sti")
+    libcamera = require("lib.camera")
+    wf = require("lib.windfield")
 
--- file management
-function loadFile(filename)
-    local datafile = require("src."..filename)
+    -- file management
+    ---@param filename string
+    function loadFile(filename)
+        local datafile = require("src."..filename)
 
-    for i, v in pairs(datafile) do
-        if type(v) == "function" then
-            love[i] = v
+        datafile.load()
+
+        for i, v in pairs(datafile) do
+            if type(v) == "function" and i ~= "load" then
+                love[i] = v
+            end
         end
-    end
-end
 
--- init
-loadFile("game")
+        print("loaded file \""..filename..".lua\"")
+    end
+
+    local sounds = {
+        sfx = {
+            dissolve = "dissolve.wav",
+            select = "select.mp3"
+        },
+
+        music = {
+            menu = "Start_Menu_music.ogg"
+        }
+    }
+
+    _G.sounds = {sfx = {}, music = {}}
+
+    for i, v in pairs(sounds.sfx) do
+        ---@type love.Source
+        _G.sounds.sfx[i] = love.audio.newSource("assets/sounds/sfx/"..v, "static")
+    end
+
+    for i, v in pairs(sounds.music) do
+        ---@type love.Source
+        _G.sounds.music[i] = love.audio.newSource("assets/sounds/music/"..v, "stream")
+        _G.sounds.music[i]:setLooping(true)
+    end
+
+    -- init
+    loadFile("splash")
+end

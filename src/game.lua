@@ -128,7 +128,7 @@ player = {
     collider = nil,
 }
 
-sounds = {
+local sounds = {
     sfx = {
         test = love.audio.newSource("/assets/sounds/sfx/bass_drop.mp3", "static"),
     },
