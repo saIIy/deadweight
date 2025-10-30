@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<template>
+ <object width="48" height="8">
+  <properties>
+   <property name="target_room" value=""/>
+   <property name="target_x" type="float" value="0"/>
+   <property name="target_y" type="float" value="0"/>
+  </properties>
+ </object>
+</template>

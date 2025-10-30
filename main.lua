@@ -12,12 +12,6 @@ function love.load()
         return nil
     end
 
-    ---@param sound love.Source
-    function playSound(sound)
-        sound:stop()
-        sound:play()
-    end
-
     -- luau's math.clamp
     ---@param n number
     ---@param min number
@@ -74,7 +68,7 @@ function love.load()
         },
 
         music = {
-            menu = "Start_Menu_music.ogg"
+            menu = "Start_Menu_music.ogg",
         }
     }
 
@@ -91,6 +85,33 @@ function love.load()
         _G.sounds.music[i]:setLooping(true)
     end
 
+    ---@param name string
+    ---@param list string
+    ---@param filename string
+    ---@return love.Source
+    function loadSound(name, list, filename)
+        if not table.find({"music", "sfx"}, list) or sounds[list][name] then return _G.sounds.music.menu end
+
+        local audiotype = "static"
+        if list == "music" then audiotype = "stream" end
+
+        _G.sounds[list][name] = love.audio.newSource(table.concat({"assets", list, filename}, "/"), audiotype)
+
+        return _G.sounds[list][name]
+    end
+
+    ---@param sound love.Source
+    function playSound(sound)
+        sound:stop()
+        sound:play()
+    end
+
+    function stopAllSounds()
+        for _, v in pairs(_G.sounds.music) do
+            v:stop()
+        end
+    end
+
     -- init
-    loadFile("splash")
+    loadFile("menu")
 end

@@ -9,8 +9,8 @@ return {
   height = 30,
   tilewidth = 16,
   tileheight = 16,
-  nextlayerid = 7,
-  nextobjectid = 21,
+  nextlayerid = 8,
+  nextobjectid = 22,
   properties = {},
   tilesets = {
     {
@@ -254,35 +254,6 @@ return {
     {
       type = "objectgroup",
       draworder = "topdown",
-      id = 5,
-      name = "Spawn",
-      class = "",
-      visible = true,
-      opacity = 1,
-      offsetx = 0,
-      offsety = 0,
-      parallaxx = 1,
-      parallaxy = 1,
-      properties = {},
-      objects = {
-        {
-          id = 12,
-          name = "",
-          type = "",
-          shape = "rectangle",
-          x = 232,
-          y = 40,
-          width = 16,
-          height = 16,
-          rotation = 0,
-          visible = true,
-          properties = {}
-        }
-      }
-    },
-    {
-      type = "objectgroup",
-      draworder = "topdown",
       id = 6,
       name = "Doors",
       class = "",
@@ -307,10 +278,38 @@ return {
           visible = true,
           properties = {
             ["target_room"] = "room2",
-            ["target_x"] = 40,
-            ["target_y"] = 40,
-            ["target_face"] = "down"
+            ["target_x"] = 232,
+            ["target_y"] = 24
           }
+        }
+      }
+    },
+    {
+      type = "objectgroup",
+      draworder = "topdown",
+      id = 5,
+      name = "Other",
+      class = "",
+      visible = true,
+      opacity = 1,
+      offsetx = 0,
+      offsety = 0,
+      parallaxx = 1,
+      parallaxy = 1,
+      properties = {},
+      objects = {
+        {
+          id = 21,
+          name = "spawn",
+          type = "",
+          shape = "point",
+          x = 232,
+          y = 34,
+          width = 0,
+          height = 0,
+          rotation = 0,
+          visible = true,
+          properties = {}
         }
       }
     }

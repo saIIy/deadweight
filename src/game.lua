@@ -33,14 +33,14 @@ function unloadRoom()
 end
 
 function loadRoom(name)
-    local room = require("rooms." .. name)
+    local room = require("assets.rooms." .. name)
 
     if #maps > 4 then
         table.remove(maps, 1)
     end
 
     if not maps[name] then
-        maps[room.map] = sti("assets/maps/"..room.map..".lua")
+        maps[room.map] = sti("assets/rooms/"..name.."_map.lua")
     end
 
     print(name)
@@ -67,7 +67,11 @@ function loadRoom(name)
     end
 
     -- position player at spawn point
-    local spawnPoint = maps[room.map].layers["Spawn"].objects[1]
+    for i,v in pairs(maps[room.map].layers["Other"].objects) do
+        if v.name == "spawn" then
+            spawnPoint = v
+        end
+    end
 
     if nextRoomSpawn then
         spawnPoint = nextRoomSpawn
@@ -377,7 +381,7 @@ function module.draw()
     if currentRoom then
         cam:attach()
             for i,v in pairs(maps[currentRoom.map].layers) do
-                if v.visible and not table.find({"Walls", "Spawn", "Doors"}, v.name) then
+                if v.visible and not table.find({"Walls", "Other", "Doors"}, v.name) then
                     maps[currentRoom.map]:drawLayer(v)
                 end
             end

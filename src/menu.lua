@@ -48,7 +48,7 @@ end
 function menu:confirm()
     local choice = self.options[self.selected]
     if choice == "Start Game" then
-        sounds.music.menu:stop()
+        stopAllSounds()
         loadFile("game")
     elseif choice == "Options" then
         print("Options menu opened!") -- could show sub-menu
