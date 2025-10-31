@@ -1,6 +1,8 @@
 -- # main.lua
 
 function love.load()
+    selected_save_slot = 0
+
     -- table.find (Luau-style)
     ---@param table table
     ---@param element any
@@ -32,6 +34,7 @@ function love.load()
     -- prints all non-table values in a table
     ---@param t table
     function printTable(t)
+        if not t then print(nil) return end
         for i, v in pairs(t) do
             if type(v) ~= "table" then
                 print("["..i.."] = "..v)
@@ -91,9 +94,8 @@ function love.load()
     end
 
     -- load required libraries
-    anim8 = require("lib/anim8")
-    word_shift = require("lib/word_shift")
-    button = require("assets.classes.button")
+    anim8 = require("lib.anim8")
+    word_shift = require("lib.word_shift")
     sti = require("lib.sti")
     libcamera = require("lib.camera")
     wf = require("lib.windfield")
@@ -128,7 +130,8 @@ function love.load()
     local sounds = {
         sfx = {
             dissolve = "dissolve.wav",
-            select = "select.mp3"
+            select = "select.mp3",
+            save = "savepoint.mp3"
         },
 
         music = {
@@ -156,8 +159,12 @@ function love.load()
     ---@param filename string
     ---@return love.Source
     function loadSound(name, list, filename, volume)
-        if not table.find({"music", "sfx"}, list) or sounds[list][name] then
+        if not table.find({"music", "sfx"}, list) then
             return _G.sounds.music.menu
+        end
+
+        if _G.sounds[list][name] then
+            return _G.sounds[list][name]
         end
 
         local audiotype = "static"
@@ -172,8 +179,10 @@ function love.load()
 
     -- plays a sound from the given source
     ---@param sound love.Source
-    function playSound(sound)
+    function playSound(sound, volume)
+        local oldv = sound:getVolume()
         sound:stop()
+        sound:setVolume(volume or oldv)
         sound:play()
     end
 

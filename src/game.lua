@@ -20,12 +20,15 @@ local transitionSpeed = 5
 local transitionTime = 0
 
 -- save point setup
-local savePoint = {
+savePoint = {
     pos = nil,
     animation = anim8.newAnimation(anim8.newGrid(16, 16, 32, 16)('1-2',1), 0.2),
     sprite = love.graphics.newImage("assets/images/savepoint.png", {linear = false, mipmaps = false, dpiscale = 1}),
     interacting = false
 }
+
+local saveMenu = require("assets.classes.save_menu")
+local save = require("lib.save")
 
 maps = {}
 
@@ -72,9 +75,11 @@ function loadRoom(name)
         table.insert(walls, wall)
     end
 
+    print(room.music)
+
     -- handle music
     if room.music and not room.music:isPlaying() then
-        stopAllSounds()
+        print("dfdnsfds")
         playSound(room.music)
     end
 
@@ -99,7 +104,6 @@ function loadRoom(name)
             local spcol = world:newBSGRectangleCollider(v.x, v.y, 16, 16, 2)
             spcol:setType("static")
             table.insert(walls, spcol)
-
         elseif v.type == "particle_emitter" then
             -- setup particles from Tiled properties
             local filepath = "assets/images/" .. (v.properties.image or "assets/images/placeholder.png")
@@ -194,6 +198,13 @@ local quitTextAlpha = 0
 
 -- load world, camera, and first room
 function module.load()
+    local saveData
+
+    if selected_save_slot ~= 0 and selected_save_slot < 4 and save.exists("save_slot_"..selected_save_slot) then
+        saveData = save.get("save_slot_"..selected_save_slot)
+        roomToLoad = saveData.room
+    end
+
     world = wf.newWorld(0, 0, false)
     world:addCollisionClass("Door")
     world:addCollisionClass("Player")
@@ -249,19 +260,11 @@ function module.update(dt)
         end
     end
 
-    -- save point interaction
-    if savePoint.pos then
-        local collider = world:queryRectangleArea(savePoint.pos.x - 16, savePoint.pos.y - 16, 32, 32, {'Player'})
-        if table.find(collider, player.collider) and (love.keyboard.isDown("z") or love.keyboard.isDown("return")) and not savePoint.interacting then
-            savePoint.interacting = true
-        end
-    end
-
     -- read movement keys
-    keys.up = love.keyboard.isDown("up")
-    keys.down = love.keyboard.isDown("down")
-    keys.left = love.keyboard.isDown("left")
-    keys.right = love.keyboard.isDown("right")
+    keys.up = love.keyboard.isDown("up") and not savePoint.interacting
+    keys.down = love.keyboard.isDown("down") and not savePoint.interacting
+    keys.left = love.keyboard.isDown("left") and not savePoint.interacting
+    keys.right = love.keyboard.isDown("right") and not savePoint.interacting
 
     local vx, vy = 0, 0
 
@@ -358,6 +361,26 @@ end
 -- handle key press events
 module.keypressed = function(key)
     if key == "escape" then escKeyHeld = true end
+
+    if saveMenu then saveMenu.keypressed(key) end
+
+    -- save point interaction
+    if savePoint.pos then
+        local collider = world:queryRectangleArea(savePoint.pos.x - 16, savePoint.pos.y - 16, 32, 32, {'Player'})
+        if table.find(collider, player.collider) and (love.keyboard.isDown("z") or love.keyboard.isDown("return")) and not savePoint.interacting then
+            savePoint.interacting = true
+            -- open save menu
+            saveMenu.show(function(slot)
+                savePoint.interacting = false
+                print("Saved in slot "..slot)
+            end,
+            {
+                player = {},
+                room = currentMap
+            })
+        end
+    end
+
     if not table.find({"up", "down", "left", "right"}, key) then return end
 
     -- immediately face input direction
@@ -401,6 +424,8 @@ function module.draw()
 
         if currentRoom.draw then currentRoom:draw() end
     end
+
+    if saveMenu then saveMenu.draw() end
 
     -- fade overlay for transitions
     if transitioning then

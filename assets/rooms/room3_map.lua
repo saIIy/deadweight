@@ -10,7 +10,7 @@ return {
   tilewidth = 16,
   tileheight = 16,
   nextlayerid = 9,
-  nextobjectid = 115,
+  nextobjectid = 116,
   properties = {},
   tilesets = {
     {
@@ -971,6 +971,19 @@ return {
             ["speed1"] = 1e-04,
             ["spread"] = 1e-04
           }
+        },
+        {
+          id = 115,
+          name = "spawn",
+          type = "spawn",
+          shape = "point",
+          x = 32,
+          y = 400,
+          width = 0,
+          height = 0,
+          rotation = 0,
+          visible = true,
+          properties = {}
         }
       }
     }
