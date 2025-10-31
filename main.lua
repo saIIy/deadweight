@@ -37,6 +37,56 @@ function love.load()
         end
     end
 
+   -- Converts a Tiled hex color (#AARRGGBB or #RRGGBB) to {r, g, b, a}
+    ---@param hex string
+    ---@return table
+    function parseTiledColor(hex)
+        if type(hex) ~= "string" or hex == "" then
+            return {1, 1, 1, 1}
+        end
+
+        hex = hex:gsub("#", "")
+
+        -- Handle 3/4-digit shorthand colors (rare in Tiled)
+        if #hex == 3 then
+            local r, g, b = hex:match("(%x)(%x)(%x)")
+            return {
+                tonumber(r .. r, 16) / 255,
+                tonumber(g .. g, 16) / 255,
+                tonumber(b .. b, 16) / 255,
+                1
+            }
+        elseif #hex == 4 then
+            local a, r, g, b = hex:match("(%x)(%x)(%x)(%x)")
+            return {
+                tonumber(r .. r, 16) / 255,
+                tonumber(g .. g, 16) / 255,
+                tonumber(b .. b, 16) / 255,
+                tonumber(a .. a, 16) / 255
+            }
+        elseif #hex == 6 then
+            -- RRGGBB
+            local r, g, b = hex:match("(%x%x)(%x%x)(%x%x)")
+            return {
+                tonumber(r, 16) / 255,
+                tonumber(g, 16) / 255,
+                tonumber(b, 16) / 255,
+                1
+            }
+        elseif #hex == 8 then
+            -- AARRGGBB (Tiled format)
+            local a, r, g, b = hex:match("(%x%x)(%x%x)(%x%x)(%x%x)")
+            return {
+                tonumber(r, 16) / 255,
+                tonumber(g, 16) / 255,
+                tonumber(b, 16) / 255,
+                tonumber(a, 16) / 255
+            }
+        else
+            return {1, 1, 1, 1}
+        end
+    end
+
     -- load libraries
     anim8 = require("lib/anim8")
     word_shift = require("lib/word_shift")
@@ -95,7 +145,7 @@ function love.load()
         local audiotype = "static"
         if list == "music" then audiotype = "stream" end
 
-        _G.sounds[list][name] = love.audio.newSource(table.concat({"assets", list, filename}, "/"), audiotype)
+        _G.sounds[list][name] = love.audio.newSource(table.concat({"assets/sounds", list, filename}, "/"), audiotype)
 
         return _G.sounds[list][name]
     end
@@ -111,7 +161,7 @@ function love.load()
             v:stop()
         end
     end
-
+    
     -- init
-    loadFile("menu")
+    loadFile("game")
 end

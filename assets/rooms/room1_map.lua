@@ -10,11 +10,11 @@ return {
   tilewidth = 16,
   tileheight = 16,
   nextlayerid = 8,
-  nextobjectid = 22,
+  nextobjectid = 23,
   properties = {},
   tilesets = {
     {
-      name = "test_tileset",
+      name = "intersection_tileset",
       firstgid = 1,
       class = "",
       tilewidth = 16,
@@ -22,7 +22,7 @@ return {
       spacing = 0,
       margin = 0,
       columns = 5,
-      image = "test_tileset.png",
+      image = "../../maps/tilesets/intersection_tileset.png",
       imagewidth = 80,
       imageheight = 80,
       objectalignment = "unspecified",
@@ -62,8 +62,8 @@ return {
       properties = {},
       encoding = "lua",
       data = {
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 3, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 8, 9, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 8, 9, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 8, 9, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 8, 9, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -248,6 +248,19 @@ return {
           rotation = 0,
           visible = true,
           properties = {}
+        },
+        {
+          id = 22,
+          name = "",
+          type = "",
+          shape = "rectangle",
+          x = 208,
+          y = 0,
+          width = 48,
+          height = 16,
+          rotation = 0,
+          visible = true,
+          properties = {}
         }
       }
     },
@@ -267,8 +280,8 @@ return {
       objects = {
         {
           id = 19,
-          name = "",
-          type = "",
+          name = "door",
+          type = "door",
           shape = "rectangle",
           x = 144,
           y = 480,
@@ -277,9 +290,10 @@ return {
           rotation = 0,
           visible = true,
           properties = {
+            ["target_face"] = "down",
             ["target_room"] = "room2",
-            ["target_x"] = 232,
-            ["target_y"] = 24
+            ["target_x"] = 40,
+            ["target_y"] = 40
           }
         }
       }
@@ -292,8 +306,8 @@ return {
       class = "",
       visible = true,
       opacity = 1,
-      offsetx = 0,
-      offsety = 0,
+      offsetx = 8,
+      offsety = 8,
       parallaxx = 1,
       parallaxy = 1,
       properties = {},
@@ -301,10 +315,10 @@ return {
         {
           id = 21,
           name = "spawn",
-          type = "",
+          type = "spawn",
           shape = "point",
-          x = 232,
-          y = 34,
+          x = 224,
+          y = 48,
           width = 0,
           height = 0,
           rotation = 0,

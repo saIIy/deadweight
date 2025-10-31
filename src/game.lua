@@ -7,6 +7,7 @@ math.randomseed(os.time())
 
 -- room management
 local currentRoom = nil
+local currentMap = ""
 local nextRoom = nil
 local nextRoomSpawn = nil
 local transitionAlpha = 0
@@ -18,6 +19,7 @@ maps = {}
 
 local walls = {}
 local doors = {}
+local particles = {}
 
 function unloadRoom()
     -- clear existing walls
@@ -25,7 +27,11 @@ function unloadRoom()
         v:destroy()
     end
 
-    walls, doors = {}, {}
+    for _,v in pairs(particles) do
+        v.particles:stop()
+    end
+
+    walls, doors, particles = {}, {}, {}
 
     if currentRoom and currentRoom.onExit then
         currentRoom:onExit()
@@ -35,12 +41,14 @@ end
 function loadRoom(name)
     local room = require("assets.rooms." .. name)
 
+    currentMap = name
+
     if #maps > 4 then
         table.remove(maps, 1)
     end
 
     if not maps[name] then
-        maps[room.map] = sti("assets/rooms/"..name.."_map.lua")
+        maps[name] = sti("assets/rooms/"..name.."_map.lua")
     end
 
     print(name)
@@ -48,28 +56,61 @@ function loadRoom(name)
     -- unload current room
     unloadRoom()
 
+    room:load()
+
     -- setup new walls
-    print(room.map)
-    for _,v in pairs(maps[room.map].layers.Walls.objects) do
+    for _,v in pairs(maps[name].layers.Walls.objects) do
         local wall = world:newBSGRectangleCollider(v.x, v.y, v.width, v.height, 0)
         wall:setType("static")
         table.insert(walls, wall)
     end
 
+    if room.music and not room.music:isPlaying() then
+        print("asdasdasd")
+        stopAllSounds()
+        playSound(room.music)
+    end
+
     -- setup new doors
-    for _,v in pairs(maps[room.map].layers.Doors.objects) do
+    for _,v in pairs(maps[name].layers.Doors.objects) do
         local door = {}
         door.target_room = v.properties.target_room
-        door.target_pos = { x = v.properties.target_x, y = v.properties.target_y }
+        door.target_pos = { x = v.properties.target_x - 8, y = v.properties.target_y - 8 }
         door.size = { width = v.width, height = v.height }
         door.position = { x = v.x, y = v.y }
         table.insert(doors, door)
     end
 
     -- position player at spawn point
-    for i,v in pairs(maps[room.map].layers["Other"].objects) do
-        if v.name == "spawn" then
-            spawnPoint = v
+    for i,v in pairs(maps[name].layers["Other"].objects) do
+        if v.type == "spawn" then
+            spawnPoint = v 
+        elseif v.type == "particle_emitter" then
+            local filepath = "assets/images/" .. (v.properties.image or "assets/images/placeholder.png")
+            local img = love.graphics.newImage(filepath)
+
+            local particleSystem = love.graphics.newParticleSystem(img)
+            local colors = {
+                [1] = parseTiledColor(v.properties.color0),
+                [2] = parseTiledColor(v.properties.color1),
+            }
+
+            particleSystem:setColors(
+                colors[1][1], colors[1][2], colors[1][3], colors[1][4],
+                colors[2][1], colors[2][2], colors[2][3], colors[2][4]
+            )
+
+            particleSystem:setEmissionRate(v.properties.rate)
+            particleSystem:setSpeed(v.properties.speed0, v.properties.speed1)
+            particleSystem:setEmissionArea("uniform", v.width / 2, v.height / 2, 0)
+            particleSystem:setPosition(v.x + v.width / 2 + 8, v.y + v.height / 2 + 8)
+            particleSystem:setParticleLifetime(v.properties.lifetime)
+            particleSystem:setSpread(math.rad(v.properties.spread))
+            particleSystem:setSizes(v.properties.scale or 1)
+            
+            particleSystem:start()
+
+            table.insert(particles, {particles = particleSystem, x = v.x, y = v.y})
         end
     end
 
@@ -77,10 +118,9 @@ function loadRoom(name)
         spawnPoint = nextRoomSpawn
     end
 
-    player.collider:setPosition(spawnPoint.x, spawnPoint.y)
+    player.collider:setPosition(spawnPoint.x + 8, spawnPoint.y + 8)
     print("Player spawned at: ", spawnPoint.x, spawnPoint.y)
 
-    room:load()
     currentRoom = room
 end
 
@@ -132,16 +172,6 @@ player = {
     collider = nil,
 }
 
-local sounds = {
-    sfx = {
-        test = love.audio.newSource("/assets/sounds/sfx/bass_drop.mp3", "static"),
-    },
-
-    music = {
-        test = love.audio.newSource("assets/sounds/music/in_the_snow.ogg", "stream"),
-    }
-}
-
 local escKeyHeld = false
 local quitTextAlpha = 0
 
@@ -166,9 +196,6 @@ function module.load()
     end
 
     loadRoom("room1")
-
-    sounds.music.test:play()
-    sounds.music.test:setLooping(true)
 end
 
 local keys = {
@@ -181,6 +208,10 @@ local keys = {
 local fps = 0
 
 function module.update(dt)
+    for _,p in ipairs(particles) do
+        p.particles:update(dt)
+    end
+
     fps = love.timer.getFPS()
 
     if escKeyHeld then
@@ -321,8 +352,8 @@ function module.update(dt)
         return
     end
 
-    local mapw = maps[currentRoom.map].width * maps[currentRoom.map].tilewidth
-    local maph = maps[currentRoom.map].height * maps[currentRoom.map].tileheight
+    local mapw = maps[currentMap].width * maps[currentMap].tilewidth
+    local maph = maps[currentMap].height * maps[currentMap].tileheight
 
     if cam.x > mapw - w/4 then
         cam.x = mapw - w/4
@@ -336,8 +367,6 @@ function module.update(dt)
     cam.y = math.floor(cam.y)
     player.position.x = math.floor(player.position.x)
     player.position.y = math.floor(player.position.y)
-
-    print(cam.x, cam.y)
 end
 
 module.keypressed = function(key)
@@ -374,16 +403,18 @@ module.keyreleased = function(key)
 end
 
 function module.draw()
-    local text = fps .. " FPS"
-
     love.graphics.setColor(1,1,1)
 
     if currentRoom then
         cam:attach()
-            for i,v in pairs(maps[currentRoom.map].layers) do
+            for i,v in pairs(maps[currentMap].layers) do
                 if v.visible and not table.find({"Walls", "Other", "Doors"}, v.name) then
-                    maps[currentRoom.map]:drawLayer(v)
+                    maps[currentMap]:drawLayer(v)
                 end
+            end
+
+            for _,p in pairs(particles) do
+                love.graphics.draw(p.particles)
             end
 
             player.animations[player.face]:draw(player.sprite, player.position.x, player.position.y, 0, 1, 1, 10, 19)
@@ -393,11 +424,6 @@ function module.draw()
             currentRoom:draw()
         end
     end
-
-    love.graphics.setColor(0.6, 0, 0)
-    love.graphics.print(text, love.graphics:getWidth() - 10, 10, 0, 1, 1, font:getWidth(text) - 2, -2)
-    love.graphics.setColor(1, 0, 0)
-    love.graphics.print(text, love.graphics:getWidth() - 10, 10, 0, 1, 1, font:getWidth(text))
 
     if transitioning then
         love.graphics.setColor(0, 0, 0, transitionAlpha)

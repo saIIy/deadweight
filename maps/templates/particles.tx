@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<template>
+ <object name="particles" type="particle_emitter" width="1" height="1">
+  <properties>
+   <property name="color0" type="color" value="#ff000000"/>
+   <property name="color1" type="color" value="#ff000000"/>
+   <property name="image" value=""/>
+   <property name="lifetime" type="float" value="0.5"/>
+   <property name="rate" type="int" value="10"/>
+   <property name="scale" type="float" value="1"/>
+   <property name="speed0" type="float" value="0"/>
+   <property name="speed1" type="float" value="0"/>
+   <property name="spread" type="float" value="0"/>
+  </properties>
+ </object>
+</template>

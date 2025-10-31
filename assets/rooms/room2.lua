@@ -1,7 +1,5 @@
 local room = {}
 
-room.map = "test_map_2"
-
 function room:load()
     
 end

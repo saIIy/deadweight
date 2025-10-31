@@ -1,16 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.10" tiledversion="1.11.2" orientation="orthogonal" renderorder="right-down" width="30" height="30" tilewidth="16" tileheight="16" infinite="0" nextlayerid="8" nextobjectid="22">
+<map version="1.10" tiledversion="1.11.2" orientation="orthogonal" renderorder="right-down" width="30" height="30" tilewidth="16" tileheight="16" infinite="0" nextlayerid="8" nextobjectid="23">
  <editorsettings>
-  <export target="../assets/maps/test_map.lua" format="lua"/>
+  <export target="../../assets/rooms/room1_map.lua" format="lua"/>
  </editorsettings>
- <tileset firstgid="1" name="test_tileset" tilewidth="16" tileheight="16" tilecount="25" columns="5">
+ <tileset firstgid="1" name="intersection_tileset" tilewidth="16" tileheight="16" tilecount="25" columns="5">
   <image source="../tilesets/intersection_tileset.png" width="80" height="80"/>
  </tileset>
- <tileset firstgid="26" source="../tilesets/intersection_tileset.tsx"/>
  <layer id="1" name="Ground" width="30" height="30">
   <data encoding="csv">
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 0,0,0,0,0,0,0,0,0,0,0,0,0,2,3,4,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-0,0,0,0,0,0,0,0,0,0,0,0,0,7,8,9,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 0,0,0,0,0,0,0,0,0,0,0,0,0,7,8,9,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 0,0,0,0,0,0,0,0,0,0,0,0,0,7,8,9,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 0,0,0,0,0,0,0,0,0,0,0,0,0,7,8,9,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
@@ -83,18 +82,19 @@
   <object id="7" x="160" y="0" width="48" height="192"/>
   <object id="8" x="0" y="0" width="160" height="480"/>
   <object id="15" x="0" y="-16" width="480" height="16"/>
+  <object id="22" x="208" y="0" width="48" height="16"/>
  </objectgroup>
  <objectgroup id="6" name="Doors">
-  <object id="19" template="room_transition.tx" name="door" type="door" x="144" y="480" width="80" height="8">
+  <object id="19" template="../templates/room_transition.tx" name="door" type="door" x="144" y="480" width="80" height="8">
    <properties>
     <property name="target_room" value="room2"/>
-    <property name="target_x" type="float" value="232"/>
-    <property name="target_y" type="float" value="24"/>
+    <property name="target_x" type="float" value="40"/>
+    <property name="target_y" type="float" value="40"/>
    </properties>
   </object>
  </objectgroup>
- <objectgroup id="5" name="Other">
-  <object id="21" name="spawn" type="spawn" x="232" y="34">
+ <objectgroup id="5" name="Other" offsetx="8" offsety="8">
+  <object id="21" name="spawn" type="spawn" x="224" y="48">
    <point/>
   </object>
  </objectgroup>

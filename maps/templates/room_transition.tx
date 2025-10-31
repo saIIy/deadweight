@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <template>
- <object width="48" height="8">
+ <object name="door" type="door" width="1" height="1">
   <properties>
+   <property name="target_face" value="down"/>
    <property name="target_room" value=""/>
    <property name="target_x" type="float" value="0"/>
    <property name="target_y" type="float" value="0"/>
