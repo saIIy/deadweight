@@ -1,14 +1,15 @@
 -- # game.lua
+-- Main gameplay logic: room loading, transitions, player movement, etc.
 
 local module = {}
 
--- random seed
+-- seed RNG
 math.randomseed(os.time())
 
---for debugging
+-- which room to start in (for testing)
 local roomToLoad = "room1"
 
--- room management
+-- room and transition state
 local currentRoom = nil
 local currentMap = ""
 local nextRoom = nil
@@ -17,10 +18,13 @@ local transitionAlpha = 0
 local transitioning = false
 local transitionSpeed = 5
 local transitionTime = 0
+
+-- save point setup
 local savePoint = {
     pos = nil,
     animation = anim8.newAnimation(anim8.newGrid(16, 16, 32, 16)('1-2',1), 0.2),
-    sprite = love.graphics.newImage("assets/images/savepoint.png"),
+    sprite = love.graphics.newImage("assets/images/savepoint.png", {linear = false, mipmaps = false, dpiscale = 1}),
+    interacting = false
 }
 
 maps = {}
@@ -29,18 +33,12 @@ local walls = {}
 local doors = {}
 local particles = {}
 
+-- clears old room data before loading a new one
 function unloadRoom()
-    -- clear existing walls
-    for _,v in pairs(walls) do
-        v:destroy()
-    end
-
-    for _,v in pairs(particles) do
-        v.particles:stop()
-    end
+    for _,v in pairs(walls) do v:destroy() end
+    for _,v in pairs(particles) do v.particles:stop() end
 
     walls, doors, particles = {}, {}, {}
-
     savePoint.pos = nil
 
     if currentRoom and currentRoom.onExit then
@@ -48,9 +46,9 @@ function unloadRoom()
     end
 end
 
+-- loads a new room and its objects
 function loadRoom(name)
     local room = require("assets.rooms." .. name)
-
     currentMap = name
 
     if #maps > 4 then
@@ -61,27 +59,26 @@ function loadRoom(name)
         maps[name] = sti("assets/rooms/"..name.."_map.lua")
     end
 
-    print(name)
-
-    -- unload current room
     unloadRoom()
 
-    room:load()
+    if room and room.load then
+        room:load()
+    end
 
-    -- setup new walls
+    -- build walls from map objects
     for _,v in pairs(maps[name].layers.Walls.objects) do
         local wall = world:newBSGRectangleCollider(v.x, v.y, v.width, v.height, 0)
         wall:setType("static")
         table.insert(walls, wall)
     end
 
+    -- handle music
     if room.music and not room.music:isPlaying() then
-        print("asdasdasd")
         stopAllSounds()
         playSound(room.music)
     end
 
-    -- setup new doors
+    -- setup doors
     for _,v in pairs(maps[name].layers.Doors.objects) do
         local door = {}
         door.target_room = v.properties.target_room
@@ -91,17 +88,22 @@ function loadRoom(name)
         table.insert(doors, door)
     end
 
-    -- position player at spawn point
-    for i,v in pairs(maps[name].layers["Other"].objects) do
+    -- place player spawn + other objects
+    for _,v in pairs(maps[name].layers["Other"].objects) do
         if v.type == "spawn" then
-            spawnPoint = v 
+            spawnPoint = v
         elseif v.type == "save" then
             savePoint.pos = {x = v.x + 8, y = v.y + 8}
             savePoint.animation:resume()
+
+            local spcol = world:newBSGRectangleCollider(v.x, v.y, 16, 16, 2)
+            spcol:setType("static")
+            table.insert(walls, spcol)
+
         elseif v.type == "particle_emitter" then
+            -- setup particles from Tiled properties
             local filepath = "assets/images/" .. (v.properties.image or "assets/images/placeholder.png")
             local img = love.graphics.newImage(filepath)
-
             local particleSystem = love.graphics.newParticleSystem(img)
             local colors = {
                 [1] = parseTiledColor(v.properties.color0),
@@ -113,53 +115,52 @@ function loadRoom(name)
                 colors[2][1], colors[2][2], colors[2][3], colors[2][4]
             )
 
-            particleSystem:setEmissionRate(v.properties.rate)
             particleSystem:setSpeed(v.properties.speed0, v.properties.speed1)
             particleSystem:setEmissionArea("uniform", v.width / 2, v.height / 2, 0)
             particleSystem:setPosition(v.x + v.width / 2 + 8, v.y + v.height / 2 + 8)
-            particleSystem:setParticleLifetime(v.properties.lifetime)
+            particleSystem:setParticleLifetime(v.properties.lt0, (v.properties.lt1 or v.properties.lt0))
             particleSystem:setSpread(math.rad(v.properties.spread))
             particleSystem:setSizes(v.properties.scale or 1)
-            
-            particleSystem:start()
 
-            table.insert(particles, {particles = particleSystem, x = v.x, y = v.y})
+            if v.properties.rate_randomness and v.properties.rate_randomness ~= 0 then
+                local rand = math.random(-v.properties.rate_randomness, v.properties.rate_randomness)
+                particleSystem:setEmissionRate(v.properties.rate + rand)
+            else
+                particleSystem:setEmissionRate(v.properties.rate)
+            end
+
+            particleSystem:start()
+            table.insert(particles, {particles = particleSystem, x = v.x, y = v.y, rand = v.properties.rate_randomness, rate = v.properties.rate})
         end
     end
 
+    -- move player to correct spawn
     if nextRoomSpawn then
         spawnPoint = nextRoomSpawn
     end
 
     player.collider:setPosition(spawnPoint.x + 8, spawnPoint.y + 8)
-    print("Player spawned at: ", spawnPoint.x, spawnPoint.y)
-
     currentRoom = room
 end
 
-local transitionPhase = "out" -- or "in"
+local transitionPhase = "out"
 
----@param pos {x:number, y:number}|nil
----@param face string|nil
+-- handles switching between rooms with fade effect
 function switchRoom(name, pos, face)
     if not transitioning then
         transitioning = true
         transitionPhase = "out"
         nextRoom = name
 
-        if pos and pos.x and pos.y then
-            nextRoomSpawn = pos
-        end
-
-        if face then
-            player.face = face
-        end
+        if pos then nextRoomSpawn = pos end
+        if face then player.face = face end
     end
 end
 
--- NO BLURRY SHIT
+-- disable texture filtering (pixel art)
 love.graphics.setDefaultFilter("nearest", "nearest")
 
+-- general game state
 game = {
     menu = true,
     paused = false,
@@ -167,6 +168,7 @@ game = {
     ended = false,
 }
 
+-- player setup
 player = {
     position = { x = 0, y = 0 },
     speed = 100,
@@ -175,22 +177,24 @@ player = {
     face = "down",
     control = true,
     animspeed = 1,
-    animations = {
-        down = anim8.newAnimation(anim8.newGrid(20, 38, 80, 152)('1-4',1), 0.2),
-        right = anim8.newAnimation(anim8.newGrid(20, 38, 80, 152)('1-4',2), 0.2),
-        left = anim8.newAnimation(anim8.newGrid(20, 38, 80, 152)('1-4',3), 0.2),
-        up = anim8.newAnimation(anim8.newGrid(20, 38, 80, 152)('1-4',4), 0.2),
-    },
     moving = false,
     collider = nil,
+}
+
+-- animation sets
+player.animations = {
+    down = anim8.newAnimation(player.grid('1-4',1), 0.2),
+    right = anim8.newAnimation(player.grid('1-4',2), 0.2),
+    left = anim8.newAnimation(player.grid('1-4',3), 0.2),
+    up = anim8.newAnimation(player.grid('1-4',4), 0.2),
 }
 
 local escKeyHeld = false
 local quitTextAlpha = 0
 
+-- load world, camera, and first room
 function module.load()
     world = wf.newWorld(0, 0, false)
-
     world:addCollisionClass("Door")
     world:addCollisionClass("Player")
 
@@ -211,72 +215,69 @@ function module.load()
     loadRoom(roomToLoad)
 end
 
-local keys = {
-    up = false,
-    down = false,
-    left = false,
-    right = false,
-}
-
+local keys = { up=false, down=false, left=false, right=false }
 local fps = 0
 
+-- main game loop
 function module.update(dt)
+    -- update particles
     for _,p in ipairs(particles) do
+        if p.rand and p.rand ~= 0 then
+            local rand = math.random(-p.rand, p.rand)
+            p.particles:setEmissionRate(p.rate + rand)
+        end
         p.particles:update(dt)
     end
 
+    -- update save point
     if savePoint.pos then
         savePoint.animation:update(dt)
     end
 
+    -- fade in "quitting" text
     if escKeyHeld then
         quitTextAlpha = math.min(quitTextAlpha + 0.007, 1)
     else
-        quitTextAlpha = math.max(quitTextAlpha - 0.003, 0) 
+        quitTextAlpha = math.max(quitTextAlpha - 0.003, 0)
     end
 
+    -- handle door collisions
     for _,v in pairs(doors) do
         local collider = world:queryRectangleArea(v.position.x, v.position.y, v.size.width, v.size.height, {'Player'})
         if table.find(collider, player.collider) and not transitioning then
-            printTable(v)
             switchRoom(v.target_room, v.target_pos, v.target_face)
         end
     end
 
-    keys = {
-        up = love.keyboard.isDown("up"),
-        down = love.keyboard.isDown("down"),
-        left = love.keyboard.isDown("left"),
-        right = love.keyboard.isDown("right"),
-    }
-    
-    local vx = 0
-    local vy = 0
-
-    -- apply movement
-    if player.control then
-        if keys.up and not keys.down then
-            vy = -player.speed
-        end
-
-        if keys.down and not keys.up then
-            vy = player.speed
-        end
-
-        if keys.left and not keys.right then
-            vx = -player.speed
-        end
-
-        if keys.right and not keys.left then
-            vx = player.speed
+    -- save point interaction
+    if savePoint.pos then
+        local collider = world:queryRectangleArea(savePoint.pos.x - 16, savePoint.pos.y - 16, 32, 32, {'Player'})
+        if table.find(collider, player.collider) and (love.keyboard.isDown("z") or love.keyboard.isDown("return")) and not savePoint.interacting then
+            savePoint.interacting = true
         end
     end
 
-    player.collider:setLinearVelocity(vx, vy)
+    -- read movement keys
+    keys.up = love.keyboard.isDown("up")
+    keys.down = love.keyboard.isDown("down")
+    keys.left = love.keyboard.isDown("left")
+    keys.right = love.keyboard.isDown("right")
 
+    local vx, vy = 0, 0
+
+    -- movement
+    if player.control then
+        if keys.up and not keys.down then vy = -player.speed end
+        if keys.down and not keys.up then vy = player.speed end
+        if keys.left and not keys.right then vx = -player.speed end
+        if keys.right and not keys.left then vx = player.speed end
+    end
+
+    player.collider:setLinearVelocity(vx, vy)
     world:update(dt)
 
-     if transitioning then
+    -- handle room transition fade
+    if transitioning then
         vx, vy = 0, 0
         player.control = false
 
@@ -304,7 +305,8 @@ function module.update(dt)
         end
     end
 
-    if love.keyboard.isDown("x") then
+    -- sprint toggle
+    if love.keyboard.isDown("x") or love.keyboard.isDown("lshift") or love.keyboard.isDown("rshift") then
         player.animspeed = 1.4
         player.speed = 125
     else
@@ -312,145 +314,102 @@ function module.update(dt)
         player.speed = 70
     end
 
-    -- update moving state
+    -- animation + facing direction logic
     local vx_, vy_ = player.collider:getLinearVelocity()
-    local horiz = math.abs(vx_) > 0.1
-    local vert  = math.abs(vy_) > 0.1
+    player.moving = math.abs(vx_) > 0.1 or math.abs(vy_) > 0.1
 
-    local horiz_input = (keys.left and not keys.right) or (keys.right and not keys.left)
-    local vert_input  = (keys.up and not keys.down) or (keys.down and not keys.up)
-
-    player.moving = (horiz or vert)
-
-    -- decide which face should be active when moving
     local desiredFace = nil
-    if horiz_input then
-        if keys.left then desiredFace = "left"
-        elseif keys.right then desiredFace = "right" end
-    elseif vert_input then
-        if keys.up then desiredFace = "up"
-        elseif keys.down then desiredFace = "down" end
-    end
+    if keys.left then desiredFace = "left"
+    elseif keys.right then desiredFace = "right"
+    elseif keys.up then desiredFace = "up"
+    elseif keys.down then desiredFace = "down" end
 
     if desiredFace and desiredFace ~= player.face then
         player.face = desiredFace
     end
 
     if player.moving then
-        -- ensure the current face animation is playing and update it
         player.animations[player.face]:resume()
         player.animations[player.face]:update(dt*player.animspeed)
     else
-        -- no effective movement: show standing frame and pause
         player.animations[player.face]:gotoFrame(2)
         player.animations[player.face]:pause()
     end
-    
+
+    -- update player + camera position
     player.position.x = player.collider:getX()
     player.position.y = player.collider:getY() - 13
 
     cam:lookAt(player.position.x, player.position.y)
     cam:zoomTo(2)
 
-    local w = love.graphics.getWidth()
-    local h = love.graphics.getHeight()
-
-    if cam.x < w/4 then
-        cam.x = w/4
-    end
-
-    if cam.y < h/4 then
-        cam.y = h/4
-    end
-
-    if not currentRoom then
-        return
-    end
-
+    -- clamp camera to map bounds
+    local w, h = love.graphics.getWidth(), love.graphics.getHeight()
     local mapw = maps[currentMap].width * maps[currentMap].tilewidth
     local maph = maps[currentMap].height * maps[currentMap].tileheight
 
-    if cam.x > mapw - w/4 then
-        cam.x = mapw - w/4
-    end
+    cam.x = math.max(w/4, math.min(cam.x, mapw - w/4))
+    cam.y = math.max(h/4, math.min(cam.y, maph - h/4))
 
-    if cam.y > maph - h/4  then
-        cam.y = maph - h/4
-    end
-
-    cam.x = math.floor(cam.x)
-    cam.y = math.floor(cam.y)
-    player.position.x = math.floor(player.position.x)
-    player.position.y = math.floor(player.position.y)
+    cam.x, cam.y = math.floor(cam.x), math.floor(cam.y)
+    player.position.x, player.position.y = math.floor(player.position.x), math.floor(player.position.y)
 end
 
+-- handle key press events
 module.keypressed = function(key)
-    if key == "escape" then
-        escKeyHeld = true
-    end
+    if key == "escape" then escKeyHeld = true end
+    if not table.find({"up", "down", "left", "right"}, key) then return end
 
-    if table.find({"up", "down", "left", "right"}, key) == nil then
-        return
-    end
-
-    -- only set facing immediately; actual play/pause handled in love.update
-    if key == "up" and not keys.down then
-        player.face = "up"
-    elseif key == "down" and not keys.up then
-        player.face = "down"
-    elseif key == "left" and not keys.right then
-        player.face = "left"
-    elseif key == "right" and not keys.left then
-        player.face = "right"
-    end
+    -- immediately face input direction
+    if key == "up" then player.face = "up"
+    elseif key == "down" then player.face = "down"
+    elseif key == "left" then player.face = "left"
+    elseif key == "right" then player.face = "right" end
 
     player.animations[player.face]:gotoFrame(1)
 end
 
+-- handle key release
 module.keyreleased = function(key)
-    if key == "escape" then
-        escKeyHeld = false
-    end
-
-    if table.find({"up", "down", "left", "right"}, key) == nil then
-        return
-    end
+    if key == "escape" then escKeyHeld = false end
 end
 
+-- draw everything
 function module.draw()
     love.graphics.setColor(1,1,1)
 
     if currentRoom then
         cam:attach()
-            for i,v in pairs(maps[currentMap].layers) do
+            -- draw map layers except collisions and triggers
+            for _,v in pairs(maps[currentMap].layers) do
                 if v.visible and not table.find({"Walls", "Other", "Doors"}, v.name) then
                     maps[currentMap]:drawLayer(v)
                 end
             end
 
+            -- draw particles and objects
             for _,p in pairs(particles) do
                 love.graphics.draw(p.particles)
             end
             
             if savePoint.pos then
-                love.graphics.setDefaultFilter("nearest")
                 savePoint.animation:draw(savePoint.sprite, savePoint.pos.x, savePoint.pos.y, 0, 1, 1, 8, 8)
             end
 
             player.animations[player.face]:draw(player.sprite, player.position.x, player.position.y, 0, 1, 1, 10, 19)
         cam:detach()
 
-        if currentRoom.draw then
-            currentRoom:draw()
-        end
+        if currentRoom.draw then currentRoom:draw() end
     end
 
+    -- fade overlay for transitions
     if transitioning then
         love.graphics.setColor(0, 0, 0, transitionAlpha)
         love.graphics.rectangle("fill", 0, 0, love.graphics.getWidth(), love.graphics.getHeight())
         love.graphics.setColor(1, 1, 1, 1)
     end
 
+    -- quitting text fade
     love.graphics.setColor(1, 1-quitTextAlpha, 1-quitTextAlpha, quitTextAlpha)
     love.graphics.print("Quitting...", 10, 10)
 

@@ -271,8 +271,8 @@ return {
           properties = {
             ["target_face"] = "right",
             ["target_room"] = "room3",
-            ["target_x"] = 40,
-            ["target_y"] = 366
+            ["target_x"] = 24,
+            ["target_y"] = 408
           }
         }
       }
@@ -306,8 +306,9 @@ return {
             ["color0"] = "#ff000000",
             ["color1"] = "#ff000000",
             ["image"] = "particles/blank.png",
-            ["lifetime"] = 0.5,
-            ["rate"] = 20,
+            ["lt0"] = 0.5,
+            ["rate"] = 10,
+            ["rate_randomness"] = 0,
             ["scale"] = 0.5,
             ["speed0"] = 0,
             ["speed1"] = 0,
@@ -329,8 +330,9 @@ return {
             ["color0"] = "#ff000000",
             ["color1"] = "#ff000000",
             ["image"] = "particles/blank.png",
-            ["lifetime"] = 0.5,
-            ["rate"] = 20,
+            ["lt0"] = 0.5,
+            ["rate"] = 10,
+            ["rate_randomness"] = 0,
             ["scale"] = 0.5,
             ["speed0"] = 0,
             ["speed1"] = 0,

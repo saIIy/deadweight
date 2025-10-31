@@ -3,11 +3,12 @@
         "height": 4300,
         "width": 2
     },
-    "activeFile": "templates/sample_map.tmx",
+    "activeFile": "maps/intersection_room3.tmx",
     "expandedProjectPaths": [
         "templates",
-        ".",
-        "tilesets"
+        "maps",
+        "tilesets",
+        "."
     ],
     "file.lastUsedOpenFilter": "All Files (*)",
     "fileStates": {
@@ -34,11 +35,11 @@
                 6,
                 5
             ],
-            "scale": 0.5,
-            "selectedLayer": 0,
+            "scale": 1.5,
+            "selectedLayer": 4,
             "viewCenter": {
-                "x": -18,
-                "y": 343
+                "x": 302.66666666666663,
+                "y": 245.66666666666669
             }
         },
         "maps/intersection_room1.tmx#intersection_tileset": {
@@ -46,15 +47,15 @@
         },
         "maps/intersection_room2.tmx": {
             "expandedObjectLayers": [
-                4,
                 6,
+                4,
                 5
             ],
-            "scale": 2,
+            "scale": 1.5,
             "selectedLayer": 3,
             "viewCenter": {
-                "x": 402,
-                "y": 322.25
+                "x": 153.33333333333331,
+                "y": 194.33333333333334
             }
         },
         "maps/intersection_room2.tmx#intersection_tileset": {
@@ -62,19 +63,19 @@
         },
         "maps/intersection_room3.tmx": {
             "expandedObjectLayers": [
-                4,
                 6,
+                4,
                 5
             ],
             "scale": 1.5,
             "selectedLayer": 3,
             "viewCenter": {
-                "x": 322.66666666666663,
-                "y": 209
+                "x": 166.66666666666666,
+                "y": 225.66666666666669
             }
         },
         "maps/intersection_room3.tmx#intersection_tileset": {
-            "scaleInDock": 1
+            "scaleInDock": 3
         },
         "templates/intersection_room2.tmx": {
             "scale": 3,
@@ -121,12 +122,16 @@
     "map.lastUsedExportFilter": "All Files (*)",
     "map.lastUsedFormat": "tmx",
     "openFiles": [
-        "templates/sample_map.tmx",
-        "tilesets/intersection_tileset.tsx"
+        "maps/intersection_room1.tmx",
+        "maps/intersection_room2.tmx",
+        "maps/intersection_room3.tmx"
     ],
     "project": "deadweight.tiled-project",
     "property.type": "float",
     "recentFiles": [
+        "maps/intersection_room1.tmx",
+        "maps/intersection_room2.tmx",
+        "maps/intersection_room3.tmx",
         "templates/intersection_room2.tmx",
         "templates/sample_map.tmx",
         "tilesets/intersection_tileset.tsx",

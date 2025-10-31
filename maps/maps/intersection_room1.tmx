@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.10" tiledversion="1.11.2" orientation="orthogonal" renderorder="right-down" width="30" height="30" tilewidth="16" tileheight="16" infinite="0" nextlayerid="8" nextobjectid="23">
+<map version="1.10" tiledversion="1.11.2" orientation="orthogonal" renderorder="right-down" width="30" height="30" tilewidth="16" tileheight="16" infinite="0" nextlayerid="8" nextobjectid="25">
  <editorsettings>
   <export target="../../assets/rooms/room1_map.lua" format="lua"/>
  </editorsettings>
@@ -96,6 +96,18 @@
  <objectgroup id="5" name="Other" offsetx="8" offsety="8">
   <object id="21" name="spawn" type="spawn" x="224" y="48">
    <point/>
+  </object>
+  <object id="23" template="../templates/particles.tx" x="198.333" y="213" width="76.6667" height="52">
+   <properties>
+    <property name="image" value="particles/blank.png"/>
+    <property name="rate" type="float" value="0.2"/>
+   </properties>
+  </object>
+  <object id="24" template="../templates/particles.tx" x="243.667" y="385.667" width="76.6667" height="52">
+   <properties>
+    <property name="image" value="particles/blank.png"/>
+    <property name="rate" type="float" value="0.2"/>
+   </properties>
   </object>
  </objectgroup>
 </map>

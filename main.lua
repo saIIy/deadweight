@@ -1,5 +1,7 @@
+-- # main.lua
+
 function love.load()
-    -- luau's table.find
+    -- table.find (Luau-style)
     ---@param table table
     ---@param element any
     ---@return number|nil
@@ -12,7 +14,7 @@ function love.load()
         return nil
     end
 
-    -- luau's math.clamp
+    -- math.clamp (Luau-style)
     ---@param n number
     ---@param min number
     ---@param max number
@@ -27,7 +29,7 @@ function love.load()
         end
     end
 
-    -- table debugger
+    -- prints all non-table values in a table
     ---@param t table
     function printTable(t)
         for i, v in pairs(t) do
@@ -37,7 +39,7 @@ function love.load()
         end
     end
 
-   -- Converts a Tiled hex color (#AARRGGBB or #RRGGBB) to {r, g, b, a}
+    -- converts a Tiled hex color to {r, g, b, a}
     ---@param hex string
     ---@return table
     function parseTiledColor(hex)
@@ -47,8 +49,8 @@ function love.load()
 
         hex = hex:gsub("#", "")
 
-        -- Handle 3/4-digit shorthand colors (rare in Tiled)
         if #hex == 3 then
+            -- RGB
             local r, g, b = hex:match("(%x)(%x)(%x)")
             return {
                 tonumber(r .. r, 16) / 255,
@@ -57,6 +59,7 @@ function love.load()
                 1
             }
         elseif #hex == 4 then
+            -- ARGB
             local a, r, g, b = hex:match("(%x)(%x)(%x)(%x)")
             return {
                 tonumber(r .. r, 16) / 255,
@@ -74,7 +77,7 @@ function love.load()
                 1
             }
         elseif #hex == 8 then
-            -- AARRGGBB (Tiled format)
+            -- AARRGGBB
             local a, r, g, b = hex:match("(%x%x)(%x%x)(%x%x)(%x%x)")
             return {
                 tonumber(r, 16) / 255,
@@ -87,7 +90,7 @@ function love.load()
         end
     end
 
-    -- load libraries
+    -- load required libraries
     anim8 = require("lib/anim8")
     word_shift = require("lib/word_shift")
     button = require("assets.classes.button")
@@ -95,22 +98,33 @@ function love.load()
     libcamera = require("lib.camera")
     wf = require("lib.windfield")
 
-    -- file management
+    -- load and bind functions from a file in src/
     ---@param filename string
     function loadFile(filename)
         local datafile = require("src."..filename)
 
-        datafile.load()
+        if datafile.load then
+            datafile.load()
+        end
 
         for i, v in pairs(datafile) do
             if type(v) == "function" and i ~= "load" then
                 love[i] = v
+
+                if not datafile.update then
+                    love.update = function () end
+                end
+
+                if not datafile.draw then
+                    love.update = function () end
+                end
             end
         end
 
         print("loaded file \""..filename..".lua\"")
     end
 
+    -- list of sound files
     local sounds = {
         sfx = {
             dissolve = "dissolve.wav",
@@ -124,24 +138,27 @@ function love.load()
 
     _G.sounds = {sfx = {}, music = {}}
 
+    -- load SFX
     for i, v in pairs(sounds.sfx) do
-        ---@type love.Source
         _G.sounds.sfx[i] = love.audio.newSource("assets/sounds/sfx/"..v, "static")
     end
 
+    -- load music
     for i, v in pairs(sounds.music) do
-        ---@type love.Source
         _G.sounds.music[i] = love.audio.newSource("assets/sounds/music/"..v[1], "stream")
         _G.sounds.music[i]:setVolume(v[2] or 1)
         _G.sounds.music[i]:setLooping(true)
     end
 
+    -- helper for loading a new sound
     ---@param name string
     ---@param list string
     ---@param filename string
     ---@return love.Source
     function loadSound(name, list, filename, volume)
-        if not table.find({"music", "sfx"}, list) or sounds[list][name] then return _G.sounds.music.menu end
+        if not table.find({"music", "sfx"}, list) or sounds[list][name] then
+            return _G.sounds.music.menu
+        end
 
         local audiotype = "static"
         if list == "music" then audiotype = "stream" end
@@ -153,18 +170,20 @@ function love.load()
         return _G.sounds[list][name]
     end
 
+    -- plays a sound from the given source
     ---@param sound love.Source
     function playSound(sound)
         sound:stop()
         sound:play()
     end
 
+    -- stops all background music
     function stopAllSounds()
         for _, v in pairs(_G.sounds.music) do
             v:stop()
         end
     end
     
-    -- init
-    loadFile("game")
+    -- start splash screen file
+    loadFile("splash")
 end

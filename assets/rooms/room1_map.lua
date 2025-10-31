@@ -10,7 +10,7 @@ return {
   tilewidth = 16,
   tileheight = 16,
   nextlayerid = 8,
-  nextobjectid = 23,
+  nextobjectid = 25,
   properties = {},
   tilesets = {
     {
@@ -324,6 +324,54 @@ return {
           rotation = 0,
           visible = true,
           properties = {}
+        },
+        {
+          id = 23,
+          name = "particles",
+          type = "",
+          shape = "rectangle",
+          x = 198.333,
+          y = 213,
+          width = 76.6667,
+          height = 52,
+          rotation = 0,
+          visible = true,
+          properties = {
+            ["color0"] = "#ff000000",
+            ["color1"] = "#ff000000",
+            ["image"] = "particles/blank.png",
+            ["lt0"] = 0.5,
+            ["rate"] = 0.2,
+            ["rate_randomness"] = 0,
+            ["scale"] = 1,
+            ["speed0"] = 0,
+            ["speed1"] = 0,
+            ["spread"] = 0
+          }
+        },
+        {
+          id = 24,
+          name = "particles",
+          type = "",
+          shape = "rectangle",
+          x = 243.667,
+          y = 385.667,
+          width = 76.6667,
+          height = 52,
+          rotation = 0,
+          visible = true,
+          properties = {
+            ["color0"] = "#ff000000",
+            ["color1"] = "#ff000000",
+            ["image"] = "particles/blank.png",
+            ["lt0"] = 0.5,
+            ["rate"] = 0.2,
+            ["rate_randomness"] = 0,
+            ["scale"] = 1,
+            ["speed0"] = 0,
+            ["speed1"] = 0,
+            ["spread"] = 0
+          }
         }
       }
     }
