@@ -118,7 +118,7 @@ function love.load()
         },
 
         music = {
-            menu = "Start_Menu_music.ogg",
+            menu = {"Start_Menu_music.ogg", 0.5},
         }
     }
 
@@ -131,7 +131,8 @@ function love.load()
 
     for i, v in pairs(sounds.music) do
         ---@type love.Source
-        _G.sounds.music[i] = love.audio.newSource("assets/sounds/music/"..v, "stream")
+        _G.sounds.music[i] = love.audio.newSource("assets/sounds/music/"..v[1], "stream")
+        _G.sounds.music[i]:setVolume(v[2] or 1)
         _G.sounds.music[i]:setLooping(true)
     end
 
@@ -139,13 +140,15 @@ function love.load()
     ---@param list string
     ---@param filename string
     ---@return love.Source
-    function loadSound(name, list, filename)
+    function loadSound(name, list, filename, volume)
         if not table.find({"music", "sfx"}, list) or sounds[list][name] then return _G.sounds.music.menu end
 
         local audiotype = "static"
         if list == "music" then audiotype = "stream" end
 
         _G.sounds[list][name] = love.audio.newSource(table.concat({"assets/sounds", list, filename}, "/"), audiotype)
+        _G.sounds[list][name]:setLooping(true)
+        _G.sounds[list][name]:setVolume(volume or 1)
 
         return _G.sounds[list][name]
     end
@@ -163,5 +166,5 @@ function love.load()
     end
     
     -- init
-    loadFile("splash")
+    loadFile("game")
 end

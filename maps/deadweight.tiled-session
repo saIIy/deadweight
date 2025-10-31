@@ -1,4 +1,8 @@
 {
+    "Map/SizeTest": {
+        "height": 4300,
+        "width": 2
+    },
     "activeFile": "templates/sample_map.tmx",
     "expandedProjectPaths": [
         "templates",
@@ -30,11 +34,11 @@
                 6,
                 5
             ],
-            "scale": 2,
-            "selectedLayer": 4,
+            "scale": 0.5,
+            "selectedLayer": 0,
             "viewCenter": {
-                "x": 300.5,
-                "y": 125.75
+                "x": -18,
+                "y": 343
             }
         },
         "maps/intersection_room1.tmx#intersection_tileset": {
@@ -46,14 +50,30 @@
                 6,
                 5
             ],
-            "scale": 1.5,
-            "selectedLayer": 2,
+            "scale": 2,
+            "selectedLayer": 3,
             "viewCenter": {
-                "x": 257.3333333333333,
-                "y": 123.66666666666669
+                "x": 402,
+                "y": 322.25
             }
         },
         "maps/intersection_room2.tmx#intersection_tileset": {
+            "scaleInDock": 1
+        },
+        "maps/intersection_room3.tmx": {
+            "expandedObjectLayers": [
+                4,
+                6,
+                5
+            ],
+            "scale": 1.5,
+            "selectedLayer": 3,
+            "viewCenter": {
+                "x": 322.66666666666663,
+                "y": 209
+            }
+        },
+        "maps/intersection_room3.tmx#intersection_tileset": {
             "scaleInDock": 1
         },
         "templates/intersection_room2.tmx": {

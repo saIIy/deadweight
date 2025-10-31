@@ -7,7 +7,7 @@ menu.active = true
 
 function module.load()
     love.graphics.setFont(love.graphics.newFont("assets/fonts/flexi-ibm-vga-true.regular.ttf", 32))
-    sounds.music.menu:play()
+    playSound(sounds.music.menu)
 end
 
 function module.update(dt)

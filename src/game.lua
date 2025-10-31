@@ -5,6 +5,9 @@ local module = {}
 -- random seed
 math.randomseed(os.time())
 
+--for debugging
+local roomToLoad = "room1"
+
 -- room management
 local currentRoom = nil
 local currentMap = ""
@@ -14,6 +17,11 @@ local transitionAlpha = 0
 local transitioning = false
 local transitionSpeed = 5
 local transitionTime = 0
+local savePoint = {
+    pos = nil,
+    animation = anim8.newAnimation(anim8.newGrid(16, 16, 32, 16)('1-2',1), 0.2),
+    sprite = love.graphics.newImage("assets/images/savepoint.png"),
+}
 
 maps = {}
 
@@ -32,6 +40,8 @@ function unloadRoom()
     end
 
     walls, doors, particles = {}, {}, {}
+
+    savePoint.pos = nil
 
     if currentRoom and currentRoom.onExit then
         currentRoom:onExit()
@@ -85,6 +95,9 @@ function loadRoom(name)
     for i,v in pairs(maps[name].layers["Other"].objects) do
         if v.type == "spawn" then
             spawnPoint = v 
+        elseif v.type == "save" then
+            savePoint.pos = {x = v.x + 8, y = v.y + 8}
+            savePoint.animation:resume()
         elseif v.type == "particle_emitter" then
             local filepath = "assets/images/" .. (v.properties.image or "assets/images/placeholder.png")
             local img = love.graphics.newImage(filepath)
@@ -195,7 +208,7 @@ function module.load()
         v:pause()
     end
 
-    loadRoom("room1")
+    loadRoom(roomToLoad)
 end
 
 local keys = {
@@ -212,7 +225,9 @@ function module.update(dt)
         p.particles:update(dt)
     end
 
-    fps = love.timer.getFPS()
+    if savePoint.pos then
+        savePoint.animation:update(dt)
+    end
 
     if escKeyHeld then
         quitTextAlpha = math.min(quitTextAlpha + 0.007, 1)
@@ -415,6 +430,11 @@ function module.draw()
 
             for _,p in pairs(particles) do
                 love.graphics.draw(p.particles)
+            end
+            
+            if savePoint.pos then
+                love.graphics.setDefaultFilter("nearest")
+                savePoint.animation:draw(savePoint.sprite, savePoint.pos.x, savePoint.pos.y, 0, 1, 1, 8, 8)
             end
 
             player.animations[player.face]:draw(player.sprite, player.position.x, player.position.y, 0, 1, 1, 10, 19)
