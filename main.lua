@@ -163,5 +163,5 @@ function love.load()
     end
     
     -- init
-    loadFile("game")
+    loadFile("splash")
 end
